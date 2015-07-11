@@ -1,4 +1,4 @@
-main: co.ryred.userinfo.UserInfoBungee
+main: co.ryred.userinfo.UserInfoBukkit
 name: UserInfo
 author: Cory Redmond
 version: ${pom.version}-B${env.BUILD_NUMBER}
