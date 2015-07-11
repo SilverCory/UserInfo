@@ -1,0 +1,10 @@
+main: co.ryred.userinfo.UserInfoBungee
+name: UserInfo
+author: Cory Redmond
+version: ${pom.version}-B${env.BUILD_NUMBER}
+description: A simple tool to see user information.
+
+commands:
+    userinfo:
+        usage: '/userinfo <username>'
+        description: Display simple user information.
