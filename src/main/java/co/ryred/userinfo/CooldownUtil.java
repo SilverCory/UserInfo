@@ -22,8 +22,6 @@ public class CooldownUtil
 		this.cooldownMap = new ConcurrentHashMap<String, Long>();
 	}
 
-	;
-
 	public synchronized static CooldownUtil getCooldown()
 	{
 		return __INSTANCE__ == null ? ( __INSTANCE__ = new CooldownUtil() ) : __INSTANCE__;
