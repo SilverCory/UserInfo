@@ -1,8 +1,12 @@
 package co.ryred.userinfo;
 
 import com.google.gson.Gson;
-import lombok.Getter;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Setter;
 
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;
 import java.util.UUID;
@@ -11,35 +15,23 @@ import java.util.UUID;
  * @author Cory Redmond
  *         Created by acech_000 on 11/07/2015.
  */
+@Data
+@AllArgsConstructor
 public class User
 {
 
 	public static final Gson GSON = new Gson();
-	@Getter
-	private final NameEntry[] nameHistory;
-	@Getter
-	private final String name;
-	@Getter
-	private final UUID uuid;
 
-	public User( UUID uuid, String name, NameEntry[] nameHistory )
-	{
-		this.uuid = uuid;
-		this.name = name;
-		this.nameHistory = nameHistory;
-	}
+	private final UUID uuid;
+	private final String name;
+	private final NameEntry[] nameHistory;
 
 	public static User getUser( UUID uuid ) throws Exception
 	{
 
 		// Name.
-		URL nameHisGet = new URL( "http://api.mcusername.net/pastuuid/" + uuid.toString().replace( "-", "" ) );
-		String nameHisStr = new Scanner( nameHisGet.openStream(), "UTF-8" ).useDelimiter( "\\A" ).next();
-
-		// Name History.
-		if ( nameHisStr.toLowerCase().contains( "not premium" ) ) throw new Exception( "User isn't premium" );
+		String nameHisStr = getContents( new URL( "https://api.minepay.net/mojang/v1/profile/" + uuid.toString() + "/history" ) );
 		NameEntry[] names = GSON.fromJson( nameHisStr, NameEntry[].class );
-
 		return new User( uuid, names[ names.length - 1 ].getName(), names );
 
 	}
@@ -48,22 +40,20 @@ public class User
 	{
 
 		// UUID.
-		URL uuidGet = new URL( "http://api.mcusername.net/playertouuid/" + name );
-		String uuidStr = new Scanner( uuidGet.openStream(), "UTF-8" ).useDelimiter( "\\A" ).next();
+		String uuidStr = getContents( new URL( "https://api.minepay.net/mojang/v1/name/" + name ) );
+		return getUser( GSON.fromJson( uuidStr, NameUUIDPair.class ).getUUID() );
 
-		if ( uuidStr.toLowerCase().contains( "not premium" ) ) throw new Exception( "User isn't premium" );
-		UUID uuid = getUUID( uuidStr );
+	}
 
-		// Name History.
-		URL nameHisGet = new URL( "http://api.mcusername.net/pastuser/" + name );
-		String nameHisStr = new Scanner( nameHisGet.openStream(), "UTF-8" ).useDelimiter( "\\A" ).next();
+	public static String getContents( URL url ) throws Exception {
+		HttpURLConnection urlCon = ( (HttpURLConnection) url.openConnection() );
+		urlCon.setRequestProperty( "user-agent", "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36" );
+		urlCon.connect();
+		if( urlCon.getResponseCode() != 200 ) {
+			throw new Exception( "User isn't premium" );
+		}
 
-		if ( nameHisStr.toLowerCase().contains( "not premium" ) ) throw new Exception( "User isn't premium" );
-		NameEntry[] names = GSON.fromJson( nameHisStr, NameEntry[].class );
-
-		// Return user.
-		return new User( uuid, name, names );
-
+		return new Scanner( urlCon.getInputStream(), "UTF-8" ).useDelimiter( "\\A" ).next();
 	}
 
 	public static UUID getUUID( String uuid ) throws Exception
@@ -71,15 +61,30 @@ public class User
 		return UUID.fromString( uuid.substring( 0, 8 ) + "-" + uuid.substring( 8, 12 ) + "-" + uuid.substring( 12, 16 ) + "-" + uuid.substring( 16, 20 ) + "-" + uuid.substring( 20, 32 ) );
 	}
 
+	@Data
+	@Setter( AccessLevel.PRIVATE )
 	public static class NameEntry
 	{
 
-		@Getter
 		private String name;
-
-		@Getter
 		private long changedToAt;
 
 	}
 
+	@Data
+	@Setter( AccessLevel.PRIVATE )
+	private static class NameUUIDPair {
+
+		private String name;
+		private String id;
+
+		public UUID getUUID() {
+			try {
+				return User.getUUID( id.replace( "-", "" ) );
+			} catch ( Exception e ) {
+				return null;
+			}
+		}
+
+	}
 }
